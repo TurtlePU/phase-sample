@@ -1,33 +1,29 @@
-import { KokPhase } from './Kok.ts'
-import { IKokController, ISasController, KokSasFacade } from './KokSasFacade.ts'
+import { ILogger, LoggerPhase } from './Logger.ts'
 import { Holder } from './Phase.ts'
-import { SasPhase } from './Sas.ts'
-import { StartCommand } from './StartCommand.ts'
+import { ISaver, SaverPhase } from './Saver.ts'
+import { Starter } from './Starter.ts'
 
-const kokController = new Holder<IKokController>({ resolveWithString: err })
-const sasController = new Holder<ISasController>({ logSavedString: err, keepLooping: err })
+const saver = new Holder<ISaver>({ save: err })
+const logger = new Holder<ILogger>({ log: err, restart: err, stop: err })
 
-const kokPhase = new KokPhase(kokController)
-const sasPhase = new SasPhase(sasController)
+const command = new Starter(new SaverPhase(saver), new LoggerPhase(logger))
 
-const command = new StartCommand(kokPhase, sasPhase)
-const facade = new KokSasFacade(kokController, sasController, command)
-
-facade.run()
+const run = command.run()
 await wait()
-facade.resolveWithString('sas')
+saver.value.save('sas')
 await wait()
-facade.resolveWithString('saas')
+saver.value.save('saas')
 await wait()
-facade.logSavedString()
+logger.value.log()
 await wait()
-facade.keepLooping(true)
+logger.value.restart()
 await wait()
-facade.resolveWithString('vvvvv')
+saver.value.save('vvvvv')
 await wait()
-facade.logSavedString()
+logger.value.log()
 await wait()
-facade.keepLooping(false)
+logger.value.stop()
+await run
 
 export function err() {
     throw new Error('you dum dum')
